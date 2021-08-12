@@ -64,9 +64,22 @@ cars<- C_11 %>%
   full_join(C_22) %>%
   select(ID_Motor,ID_Fahrzeug)
 
+Path_Zul <- '03_Data/Zulassungen/Zulassungen_alle_Fahrzeuge.csv'
+
+Zul <- read_csv2(Path_Zul)
+
 T2_cars<- cars%>%
   left_join(T2_mot)%>%
   mutate(affected= case_when(Produktionsdatum.T2 > "2008-4-30" & Produktionsdatum.T2 < "2010-12-31" & Herstellernummer.T2==202 & Werksnummer.T2 ==2022 ~ 1,
-                             TRUE ~ 0))
+                             TRUE ~ 0))%>%
+  left_join(Zul, by=c("ID_Fahrzeug"="IDNummer"))%>%
+  select(-8) %>%
+  group_by(Gemeinden,affected)%>%
+  summarise(n())
+
+
+
+
+
 
 
