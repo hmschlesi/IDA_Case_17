@@ -1,0 +1,143 @@
+---
+title: "IDA_Case17"
+author: "g17"
+date: "13 8 2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## IDA Case Study 17 SS 2021
+
+First step is to load all used libraries
+
+```{r libraries}
+if(!require(install.load)){
+  install.packages("install.load")
+  library(install.load)
+}
+install_load("tidyverse", "readr", "plotly", "stringr")
+```
+
+## reading and processing data
+
+# stratergy of data import
+The general strategy is to identify all motors containing a T2-component. After this the respective cars can be identified through the motor Id. To create this connections the components data set all motors is loaded as well as the assemblies data for the porduced cars. The componets data for the motors is split up in two sets, which refer to different motor types, as well as the assemblies data for the cars is split up in four seperate sets. Both sets will be joined together, but important info such as car or motor assembly plant or manufacturer is still available sinc it is part of the motor id or the car id if this information is required at a later point.
+Its assumed that the relevant data is stored in the same folder root folder accoriding to the origial path layout.
+
+# T2-component data
+
+The raw data for the T2-components has already been processed from the initial raw data, so it is readable as a proper dataframe.
+This included deleting quote signs from the character vectors as well as splitting up the T2 data in two raw data files since the Values were not congruent with their respective column anymore.
+Columns which will not be used are removed and for better readability the column names refering to the T2 component get an according suffix "T2"
+
+```{r T2_data}
+Path_T2_1 <- '03_Data/Einzelteil/Einzelteil_T02_p1.txt'
+Path_T2_2 <- '03_Data/Einzelteil/Einzelteil_T02_p2.txt'
+
+T2_1 <- read_table(Path_T2_1)
+T2_2 <- read_table(Path_T2_2)
+
+T2_1 <- T2_1 %>%
+  select(!ends_with(".y") )%>%
+  select(c(-id, -X1)) %>%
+  select(!starts_with("Fehlerhaft"))%>%
+  rename_with(~ gsub(".x", ".T2", .x))
+
+T2_2 <- T2_2 %>%
+  select(!ends_with(".y") )%>%
+  select(c(-X17,-id, -X1)) %>%
+  select(!starts_with("Fehlerhaft"))%>%
+  rename_with(~ gsub(".x", ".T2", .x))
+
+T2<- T2_1%>%
+  full_join(T2_2)
+```
+
+# Motor data
+The respective data is getting read and both id columns are getting renamed for a cleaner joining of the two sets. Also all refernces for other parts are getting removed since they dont contribute any meaningfull information for the 
+Alos the motor data is getting joined together with the T2 component data and each component gets linked with an individual motor Id
+```{r}
+Path_K1BE1_kom <- '03_Data/Komponente/Bestandteile_Komponente_K1BE1.csv'
+Path_K1BE2_kom <- '03_Data/Komponente/Bestandteile_Komponente_K1BE2.csv' 
+
+K1BE1_kom <- read_csv2(Path_K1BE1_kom)
+K1BE1_kom <- K1BE1_kom%>%
+  rename(ID_Motor=ID_K1BE1)
+K1BE2_kom <- read_csv2(Path_K1BE2_kom)
+K1BE2_kom <- K1BE2_kom %>%
+  rename(ID_Motor=ID_K1BE2)
+
+Motors <- K1BE1_kom%>%
+  full_join(K1BE2_kom)%>%
+  select(c(-ID_T1,-ID_T7,-ID_T8,-ID_T3,-1,-ID_T4))
+
+T2_mot <- T2%>%
+  left_join(Motors, by=c("ID_T02.T2"="ID_T2")) 
+```
+# Car data
+The car data is being treted in a similar way as the motor data. Only relevant Data is used.
+```{r cars}
+Path_C_11 <- '03_Data/Fahrzeug/Bestandteile_Fahrzeuge_OEM1_Typ11.csv'
+Path_C_12 <- '03_Data/Fahrzeug/Bestandteile_Fahrzeuge_OEM1_Typ12.csv'
+Path_C_21 <- '03_Data/Fahrzeug/Bestandteile_Fahrzeuge_OEM2_Typ21.csv'
+Path_C_22 <- '03_Data/Fahrzeug/Bestandteile_Fahrzeuge_OEM2_Typ22.csv'
+
+
+C_11<- read_csv2(Path_C_11)
+C_12<- read_csv2(Path_C_12)
+C_21<- read_csv2(Path_C_21)
+C_22<- read_csv2(Path_C_22)
+
+cars<- C_11 %>%
+  full_join(C_12)%>%
+  full_join(C_21)%>%
+  full_join(C_22) %>%
+  select(ID_Motor,ID_Fahrzeug)
+```
+#Car Ids and filtering for affected cars
+For this task it is also necessary to load and read the "Zulassungs" data. First the Data with the motors and respective T2 component data is linked to a final car ID over the cars data set.
+Now with all data finally linked together its possible to decide which car is affected with the faulty T2 component.With the given constraints by date, factory and manufacturer this info is stored in a new column called "affected".
+The Data is also linked to "Zulassungs" data refernce each vehicel to a region.
+
+```{r filter}
+
+Path_Zul <- '03_Data/Zulassungen/Zulassungen_alle_Fahrzeuge.csv'
+
+Zul <- read_csv2(Path_Zul)
+
+T2_cars<- cars%>%
+  left_join(T2_mot)%>%
+  mutate(affected= case_when(Produktionsdatum.T2 > "2008-4-30" & Produktionsdatum.T2 < "2010-12-31" & Herstellernummer.T2==202 & Werksnummer.T2 ==2022 ~ 1,
+                             TRUE ~ 0))%>%
+  left_join(Zul, by=c("ID_Fahrzeug"="IDNummer"))%>%
+  select(-8) %>%
+  group_by(Gemeinden,affected)%>%
+  filter(affected==1) %>%
+  summarise(n=n())
+
+```
+A plot of all affected cars in respective to their regions.
+```{R}
+Path_geo <- '03_Data/Geodaten/Geodaten_Gemeinden_v1.2_2017-08-22_TrR.csv'
+
+geo<-read_csv2(Path_geo)
+
+T2_cars<- T2_cars %>%
+  left_join(geo, by=c("Gemeinden"="Gemeinde"))
+
+affected_plot <-ggplot(T2_cars,aes(Laengengrad, Breitengrad))+
+  geom_point(colour="red",aes(size=n, alpha=n))+ 
+  theme_bw() + 
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))+
+  coord_fixed(ratio = 1.5)+
+  scale_alpha(range = c(0.1, 1))
+
+ggplotly(affected_plot)
+
+```
+
+

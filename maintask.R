@@ -75,12 +75,20 @@ T2_cars<- cars%>%
   left_join(Zul, by=c("ID_Fahrzeug"="IDNummer"))%>%
   select(-8) %>%
   group_by(Gemeinden,affected)%>%
-  summarise(n())
+  filter(affected==0) %>%
+  summarise(n=n())
 
+Path_geo <- '03_Data/Geodaten/Geodaten_Gemeinden_v1.2_2017-08-22_TrR.csv'
 
+geo<-read_csv2(Path_geo)
 
+T2_cars<- T2_cars %>%
+  left_join(geo, by=c("Gemeinden"="Gemeinde"))
 
-
-
-
-
+ggplot(T2_cars,aes(Laengengrad, Breitengrad))+
+  geom_point(colour="red",aes(size=n, alpha=n))+ 
+  theme_bw() + 
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))+
+  coord_fixed(ratio = 1.5)+
+  scale_alpha(range = c(0.1, 1))
