@@ -162,7 +162,7 @@ p3<-ggplot(T2_cars_by_region,aes(x=reorder(Gemeinden,-n),y=n))+
 
 ggplotly(p3)
 ```
-Linking the geolocial data to the regions makes it possible to plot a heat map of the affected behicels
+Linking the geolocial data to the regions makes it possible to plot a heat map of the affected Vehicels
 ```{R}
 Path_geo <- '03_Data/Geodaten/Geodaten_Gemeinden_v1.2_2017-08-22_TrR.csv'
 
