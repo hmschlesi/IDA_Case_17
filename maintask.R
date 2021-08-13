@@ -70,13 +70,44 @@ Zul <- read_csv2(Path_Zul)
 
 T2_cars<- cars%>%
   left_join(T2_mot)%>%
-  mutate(affected= case_when(Produktionsdatum.T2 > "2008-4-30" & Produktionsdatum.T2 < "2010-12-31" & Herstellernummer.T2==202 & Werksnummer.T2 ==2022 ~ 1,
-                             TRUE ~ 0))%>%
+  mutate(affected= case_when(Produktionsdatum.T2 > "2008-4-30" & Produktionsdatum.T2 < "2010-12-31" & Herstellernummer.T2==202 & Werksnummer.T2 ==2022 ~ "affected",
+                             TRUE ~ "not affected"))%>%
   left_join(Zul, by=c("ID_Fahrzeug"="IDNummer"))%>%
-  select(-8) %>%
-  group_by(Gemeinden,affected)%>%
-  filter(affected==0) %>%
+  select(-8)
+
+T2_cars_group_by_oem <- T2_cars %>%
+  mutate(OEM=str_sub(ID_Fahrzeug,4,4)) %>%
+  mutate(affected=as_factor(affected))%>%
+  group_by(OEM, affected)%>%
   summarise(n=n())
+
+ggplot(T2_cars_group_by_oem, aes(x=OEM, y=n, fill=affected)) +
+  geom_bar(stat="identity",position=position_dodge())+
+  ggtitle("affected and unaffected vehicels by OEM")
+
+T2_cars_group_by_plant <- T2_cars %>%
+  mutate(Plant=str_sub(ID_Fahrzeug,6,7))%>%
+  mutate(affected=as_factor(affected))%>%
+  group_by(Plant, affected)%>%
+  summarise(n=n())
+
+ggplot(T2_cars_group_by_plant, aes(x=Plant, y=n, fill=affected)) +
+  geom_bar(stat="identity",position=position_dodge())+
+  ggtitle("affected and unaffected vehicels by factory")
+
+T2_cars_by_region <- T2_cars %>%
+  filter(affected=="affected")%>%
+  group_by(Gemeinden)%>%
+  summarise(n=n())%>%
+  arrange(desc(n))%>%
+  slice(1:10)
+
+ggplot(T2_cars_by_region,aes(x=reorder(Gemeinden,-n),y=n))+
+  geom_bar(stat = "identity", fill="darkseagreen3",position = position_stack(reverse = TRUE))+
+  theme_bw()+
+  ggtitle("The ten most affected regions with defect component T2")
+
+
 
 Path_geo <- '03_Data/Geodaten/Geodaten_Gemeinden_v1.2_2017-08-22_TrR.csv'
 
@@ -84,6 +115,8 @@ geo<-read_csv2(Path_geo)
 
 T2_cars<- T2_cars %>%
   left_join(geo, by=c("Gemeinden"="Gemeinde"))
+
+
 
 ggplot(T2_cars,aes(Laengengrad, Breitengrad))+
   geom_point(colour="red",aes(size=n, alpha=n))+ 

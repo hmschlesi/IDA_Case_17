@@ -110,34 +110,80 @@ Zul <- read_csv2(Path_Zul)
 
 T2_cars<- cars%>%
   left_join(T2_mot)%>%
-  mutate(affected= case_when(Produktionsdatum.T2 > "2008-4-30" & Produktionsdatum.T2 < "2010-12-31" & Herstellernummer.T2==202 & Werksnummer.T2 ==2022 ~ 1,
-                             TRUE ~ 0))%>%
+  mutate(affected= case_when(Produktionsdatum.T2 > "2008-4-30" & Produktionsdatum.T2 < "2010-12-31" & Herstellernummer.T2==202 & Werksnummer.T2 ==2022 ~ "affected",
+                             TRUE ~ "not affected"))%>%
   left_join(Zul, by=c("ID_Fahrzeug"="IDNummer"))%>%
-  select(-8) %>%
-  group_by(Gemeinden,affected)%>%
-  filter(affected==1) %>%
-  summarise(n=n())
+  select(-8)
 
 ```
-A plot of all affected cars in respective to their regions.
+To get an overview of the situation some plots might help.
+The broadest overview is given by filtering for the two OEMs and comparing affected and not affected vehicels.
+The ratio seems to be quite similar for both OEMS.
+```{r}
+T2_cars_group_by_oem <- T2_cars %>%
+  mutate(OEM=str_sub(ID_Fahrzeug,4,4)) %>%
+  mutate(affected=as_factor(affected))%>%
+  group_by(OEM, affected)%>%
+  summarise(n=n())
+
+p1<-ggplot(T2_cars_group_by_oem, aes(x=OEM, y=n, fill=affected)) +
+  geom_bar(stat="identity",position=position_dodge())+
+  ggtitle("affected and unaffected vehicels by OEM")
+ggplotly(p1)
+```
+A second plot shows the distribution  in regards to the manufacturing plants, but also here the ratio seems quite similar
+```{r}
+T2_cars_group_by_plant <- T2_cars %>%
+  mutate(Plant=str_sub(ID_Fahrzeug,6,7))%>%
+  mutate(affected=as_factor(affected))%>%
+  group_by(Plant, affected)%>%
+  summarise(n=n())
+
+p2<-ggplot(T2_cars_group_by_plant, aes(x=Plant, y=n, fill=affected)) +
+  geom_bar(stat="identity",position=position_dodge())+
+  ggtitle("affected and unaffected vehicels by factory")
+ggplotly(p2)
+
+```
+
+This plots shows the 10 regions with the most amount of faulty vehicels
+```{r}
+T2_cars_by_region <- T2_cars %>%
+  filter(affected=="affected")%>%
+  group_by(Gemeinden)%>%
+  summarise(n=n())%>%
+  arrange(desc(n))%>%
+  slice(1:10)
+
+p3<-ggplot(T2_cars_by_region,aes(x=reorder(Gemeinden,-n),y=n))+
+  geom_bar(stat = "identity", fill="darkseagreen3",position = position_stack(reverse = TRUE))+
+  theme_bw()+
+  ggtitle("The ten most affected regions with defect component T2")
+
+ggplotly(p3)
+```
+Linking the geolocial data to the regions makes it possible to plot a heat map of the affected behicels
 ```{R}
 Path_geo <- '03_Data/Geodaten/Geodaten_Gemeinden_v1.2_2017-08-22_TrR.csv'
 
 geo<-read_csv2(Path_geo)
 
-T2_cars<- T2_cars %>%
+T2_cars_geo<- T2_cars %>%
+  filter(affected=="affected")%>%
+  group_by(Gemeinden)%>%
+  summarise(n=n())%>%
   left_join(geo, by=c("Gemeinden"="Gemeinde"))
 
-affected_plot <-ggplot(T2_cars,aes(Laengengrad, Breitengrad))+
-  geom_point(colour="red",aes(size=n, alpha=n))+ 
+
+
+p4<-ggplot(T2_cars_geo,aes(Laengengrad, Breitengrad))+
+  geom_point(fill="red",aes(size=n, alpha=n))+ 
   theme_bw() + 
   theme(panel.border = element_blank(), panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))+
   coord_fixed(ratio = 1.5)+
   scale_alpha(range = c(0.1, 1))
-
-ggplotly(affected_plot)
-
+ggplotly(p4)
 ```
 
 
