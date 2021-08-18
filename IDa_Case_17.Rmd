@@ -2,7 +2,9 @@
 title: "IDA_Case17"
 author: "g17"
 date: "13 8 2021"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -129,7 +131,7 @@ T2_cars_group_by_oem <- T2_cars %>%
 p1<-ggplot(T2_cars_group_by_oem, aes(x=OEM, y=n, fill=affected)) +
   geom_bar(stat="identity",position=position_dodge())+
   ggtitle("affected and unaffected vehicels by OEM")
-ggplotly(p1)
+#ggplotly(p1)
 ```
 A second plot shows the distribution  in regards to the manufacturing plants, but also here the ratio seems quite similar
 ```{r}
@@ -142,11 +144,11 @@ T2_cars_group_by_plant <- T2_cars %>%
 p2<-ggplot(T2_cars_group_by_plant, aes(x=Plant, y=n, fill=affected)) +
   geom_bar(stat="identity",position=position_dodge())+
   ggtitle("affected and unaffected vehicels by factory")
-ggplotly(p2)
+#ggplotly(p2)
 
 ```
 
-This plots shows the 10 regions with the most amount of faulty vehicels
+This plot shows the 10 regions with the most amount of faulty vehicels
 ```{r}
 T2_cars_by_region <- T2_cars %>%
   filter(affected=="affected")%>%
@@ -160,7 +162,7 @@ p3<-ggplot(T2_cars_by_region,aes(x=reorder(Gemeinden,-n),y=n))+
   theme_bw()+
   ggtitle("The ten most affected regions with defect component T2")
 
-ggplotly(p3)
+#ggplotly(p3)
 ```
 Linking the geolocial data to the regions makes it possible to plot a heat map of the affected Vehicels
 ```{R}
@@ -183,7 +185,7 @@ p4<-ggplot(T2_cars_geo,aes(Laengengrad, Breitengrad))+
         panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))+
   coord_fixed(ratio = 1.5)+
   scale_alpha(range = c(0.1, 1))
-ggplotly(p4)
+#ggplotly(p4)
 ```
 
 
