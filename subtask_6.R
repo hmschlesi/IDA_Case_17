@@ -37,4 +37,3 @@ Kenn <- zul %>%
   filter(IDNummer== car_id$ID_Fahrzeug)
 # Das Fahrzeug ist in Aschersleben registriert
 Kenn
-car_id
