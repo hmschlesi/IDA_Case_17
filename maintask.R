@@ -176,14 +176,27 @@ T2_cars_all <- T2_cars_bund%>%
 
 write_csv(T2_cars_all,"T2_cars_all.csv")
 
-
-T2_cars_bund_general <- T2_cars_bund %>%
+T2_unaffected_general <- T2_cars%>%
+  left_join(geo, by=c("Gemeinden"="Gemeinde"))%>%
   group_by(Gemeinden)%>%
+  summarise(unaffected=n())
+
+
+T2_cars_bund_general  <- T2_cars_bund %>%
+  full_join(T2_cars)%>%
+  group_by(Gemeinden,affected)%>%
   summarise(n=n(), repair_days=max(rep_days))%>%
   left_join(geo, by=c("Gemeinden"="Gemeinde"))
+  
 
+T2_cars_bund_general1 <- T2_cars_bund_general%>%
+  filter(Gemeinden=="ACHBERG")
 
-write_csv(T2_cars_bund_general,"T2_cars_bund_general.csv")
+ggplot(T2_cars_bund_general1, aes(x=Gemeinden, y=n, fill=affected)) +
+  geom_bar(stat="identity",position=position_dodge())+
+  ggtitle("affected and unaffected vehicels by OEM")
+
+write_csv(T2_cars_bund_general,"shiny_app/T2_cars_bund_general4.csv")
 
 ggplot(T2_cars_bund_general,aes(Laengengrad, Breitengrad, color=repair_days))+
   geom_point( alpha=0.5, aes(size=n))+
