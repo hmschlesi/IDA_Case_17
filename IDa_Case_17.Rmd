@@ -230,21 +230,26 @@ T2_cars_bund  <- T2_cars %>%
 ```
 An approximate heatmap can be plotted. The dot size shows the affected number of vehicles in comparison and the color maps to the duration until the repair date is due.
 
-```{r Heatmap}
+```{r Heatmap, echo=FALSE}
 T2_cars_bund_general <- T2_cars_bund %>%
   group_by(Gemeinden)%>%
   summarise(n=n(), repair_days=max(rep_days))%>%
   left_join(geo, by=c("Gemeinden"="Gemeinde"))
 
+fig <- T2_cars_bund_general %>%
+  plot_ly(lat=~Breitengrad , lon = ~Laengengrad,
+          marker=list(color=~repair_days, size=~n*0.1,
+                      colorscale='Cividis,', sizemode="area"),
+          text = ~paste(Gemeinden, paste("affected Vehicels:", n), paste("average duration for repair", repair_days), sep = "<br />"), 
+          hoverinfo="text",
+          type='scattermapbox')%>%
+  layout(
+    mapbox=list(
+      style = 'carto-positron',
+      zoom =4.5,
+      center = list(lon = 10, lat = 51)))
+fig
 
-p4<-ggplot(T2_cars_bund_general,aes(Laengengrad, Breitengrad, color=repair_days))+
-  geom_point( alpha=0.5, aes(size=n))+
-  scale_colour_gradient(low = "lawngreen", high = "red", na.value = NA)+
-  theme_bw() + 
-  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))+
-  coord_fixed(ratio = 1.5)
-ggplotly(p4)
 ```
 
 
@@ -310,7 +315,7 @@ Dahlem_k7
 # General Task 4: Table and variabletypes of "Zulassung"
 The first row of that data is formatted as doubles. The "IDNummer" und "Gemeinden" are formated as characatervectors and the column "Zulassungen" is foramtted as a date with the general format of "year-month-day".
 
-```{r echo=FALSE, results='asis'}
+```{r echo=FALSE, results='asis',message=FALSE}
 library(knitr)
 Path_zul <- '03_Data/Zulassungen/Zulassungen_alle_Fahrzeuge.csv'
 zul <- read_csv2(Path_zul)

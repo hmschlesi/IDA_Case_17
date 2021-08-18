@@ -166,12 +166,24 @@ T2_cars_bund  <- T2_cars %>%
   mutate(rep_days=ceiling(row_number()/100))%>%
   mutate(rep_date= date(start_repair)+rep_days)
 
+T2_unaffected <- T2_cars%>%
+  filter(affected != "affected")
+
+T2_cars_all <- T2_cars_bund%>%
+  ungroup()%>%
+  full_join(T2_unaffected)%>%
+  select(c(ID_Fahrzeug,ID_Motor,ID_T02.T2,affected,Gemeinden,rep_date))
+
+write_csv(T2_cars_all,"T2_cars_all.csv")
+
 
 T2_cars_bund_general <- T2_cars_bund %>%
   group_by(Gemeinden)%>%
   summarise(n=n(), repair_days=max(rep_days))%>%
   left_join(geo, by=c("Gemeinden"="Gemeinde"))
 
+
+write_csv(T2_cars_bund_general,"T2_cars_bund_general.csv")
 
 ggplot(T2_cars_bund_general,aes(Laengengrad, Breitengrad, color=repair_days))+
   geom_point( alpha=0.5, aes(size=n))+

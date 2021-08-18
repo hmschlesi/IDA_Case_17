@@ -41,7 +41,7 @@ Kenn <- zul %>%
 Dahlem_k7 <- Kenn %>%
   group_by(Gemeinden) %>%
   summarise(n())%>%
-  filter(Gemeinden=='Dahlem')
+  filter(Gemeinden=='Dahlem1')
 
 Dahlem_k7
 #keine Zulassungen in Dahlem! Auch nicht im gesamten Datensatz!!! Prüfen!!!
