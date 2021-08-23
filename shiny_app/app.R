@@ -64,7 +64,7 @@ server <- function(input, output) {
     })
     
     
-    
+    #Donwloads the Dataset for the searched car ID
     output$download <- downloadHandler(
         filename = function() {
             paste("data-", Sys.Date(), ".csv", sep=",")
@@ -74,6 +74,7 @@ server <- function(input, output) {
         }
     )
     
+    #general PLot of the HEatmap, adjust size and positon at the en
     output$genPlot <- renderPlotly(
         plot_ly(T2_gen_affected ,lat=~Breitengrad , lon = ~Laengengrad,
                 marker=list(color=~repair_days, size=~n*0.1,
@@ -88,27 +89,30 @@ server <- function(input, output) {
                     center = list(lon = 10, lat = 51)),
                 autosize=F, width=1000, height=1400)
     )
-    output$click <- renderPrint({
-        d <- event_data("plotly_click")
-        if (is.null(d)) "Click events appear here (double-click to clear)" else d
-    })
     
+    # #Testfunction to check that click works and gives the right data
+    # output$click <- renderPrint({
+    #     d <- event_data("plotly_click")
+    #     if (is.null(d)) "Click events appear here (double-click to clear)" else d
+    # })
+    
+    #PLot function for the pop up plot also should filter for the right city but doesnt work yet !!!
     dataModal <- function(ed){
         modalDialog(
-            city <- T2_gen_affected[ed$pointNumber+1,"Gemeinden"],
-            paste("You have selected", city , ".")  ,
+            # city <- T2_gen_affected[ed$pointNumber+1,"Gemeinden"],
+            # paste("You have selected", city , ".")  ,
             renderPlot({
-                T2_region <- T2_gen%>%
-                    #City var doesnt forward into render, research how to access city in render !!!
-                    filter(Gemeinden=="WOLFSBURG")
-                ggplot(T2_region, aes(x=Gemeinden, y=n, fill=affected)) +
+                # T2_region <- T2_gen%>%
+                #     #City var doesnt forward into render, research how to access city in render !!!
+                #     filter(Gemeinden=="WOLFSBURG")
+                ggplot(T2_gen%>%filter(Gemeinden==as.character(T2_gen_affected[ed$pointNumber+1,"Gemeinden"])), aes(x=Gemeinden, y=n, fill=affected)) +
                     geom_bar(stat="identity",position=position_dodge())+
-                    ggtitle("affected and unaffected vehicels by OEM")
+                    ggtitle(T2_gen_affected[ed$pointNumber+1,"Gemeinden"])
             })
         )
     }
     
-    
+    #checks for click events and runs the plot function for the pop up plot
     observeEvent(event_data("plotly_click"), {
         event_data = event_data("plotly_click")
         showModal(dataModal(event_data))
