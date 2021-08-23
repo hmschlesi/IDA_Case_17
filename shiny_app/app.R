@@ -8,6 +8,8 @@ library(lubridate)
 path_gen <-'T2_cars_bund_general4.csv'
 path_all <- 'T2_cars_all.csv'
 
+PAGE_TITLE <- "My great title"
+
 T2_gen <- read_csv(path_gen)
 T2_gen_affected <- T2_gen%>%
     filter(affected=="affected")
@@ -21,28 +23,32 @@ plotModal <- function(session) {
     )
 }
 
-
 ui <-
-    navbarPage("IDA Case Study 17",
-               tabPanel("Overview",
-                        fluidPage(
-                            mainPanel(
-                                verbatimTextOutput("click"),
-                                plotlyOutput(outputId = "genPlot")
-                            )
-                        )
-               ),
-               tabPanel("check my car",
-                        fluidPage(
-                            mainPanel(
-                                textInput("car_id", "Enter Car Id here", "-"),
-                                actionButton("check","Check Car ID"),
-                                tableOutput('tab_out'),
-                                downloadButton("download","Download Data"))
-                        )
-               )
-    )
 
+    shiny::navbarPage(
+        theme = "style.css",
+        #the line of code places the logo on the left hand side before the tabs start. See image below.
+        title = div(img(src='logo.png',style="margin-top: -14px; padding-right:15px;padding-bottom:15px", height = 60)),
+        #theme = "journal",
+        windowTitle="Logan Together: Service Map",
+                   tabPanel("Overview",
+                            p("Map with a general OVerview of the affected Vehicel. You can check if your car is affected under the 'check my car' tab"),
+                            fluidPage(
+                                mainPanel(
+                                    verbatimTextOutput("click"),
+                                    plotlyOutput(outputId = "genPlot", width="auto")
+                                )
+                            )),
+                    tabPanel("check my car",
+                            fluidPage(
+                                mainPanel(
+                                    textInput("car_id", "Enter Car Id here", "-"),
+                                    actionButton("check","Check Car ID"),
+                                    tableOutput('tab_out'),
+                                    downloadButton("download","Download Data"))
+                                     )
+                            )
+    )
 
 server <- function(input, output) {
     
@@ -87,24 +93,17 @@ server <- function(input, output) {
                     style = 'carto-positron',
                     zoom =5.5,
                     center = list(lon = 10, lat = 51)),
-                autosize=F, width=1000, height=1400)
+                 autosize=F, width=800, height=1000 ,
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)'
+             )
     )
     
-    # #Testfunction to check that click works and gives the right data
-    # output$click <- renderPrint({
-    #     d <- event_data("plotly_click")
-    #     if (is.null(d)) "Click events appear here (double-click to clear)" else d
-    # })
     
-    #PLot function for the pop up plot also should filter for the right city but doesnt work yet !!!
+    #PLot function for the pop up plot also should filter for the right city 
     dataModal <- function(ed){
         modalDialog(
-            # city <- T2_gen_affected[ed$pointNumber+1,"Gemeinden"],
-            # paste("You have selected", city , ".")  ,
             renderPlot({
-                # T2_region <- T2_gen%>%
-                #     #City var doesnt forward into render, research how to access city in render !!!
-                #     filter(Gemeinden=="WOLFSBURG")
                 ggplot(T2_gen%>%filter(Gemeinden==as.character(T2_gen_affected[ed$pointNumber+1,"Gemeinden"])), aes(x=Gemeinden, y=n, fill=affected)) +
                     geom_bar(stat="identity",position=position_dodge())+
                     ggtitle(T2_gen_affected[ed$pointNumber+1,"Gemeinden"])

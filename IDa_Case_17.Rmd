@@ -2,40 +2,46 @@
 title: "IDA_Case17"
 author: "g17"
 date: "13 8 2021"
-output: html_document
+output: 
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
 ---
 
 ```{r setup, include=FALSE}
-#knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message=FALSE)
 ```
 
 ## IDA Case Study 17 SS 2021
 
 First step is to load all used libraries
 
-```{r libraries}
+```{r libraries, message=FALSE}
 if(!require(install.load)){
   install.packages("install.load")
   library(install.load)
 }
-install_load("tidyverse", "readr", "plotly", "stringr", "readxl", "lubridate")
+install_load("tidyverse", "readr", "plotly", "stringr", "readxl", "lubridate","knitr")
 
 start_repair <- "2021-09-01"
 ```
 
-## reading and processing data
+# Main task
 
-# stratergy of data import
+## stratergy of data import
 The general strategy is to identify all motors containing a T2-component. After this the respective cars can be identified through the motor Id. To create this connections the components data set all motors is loaded as well as the assemblies data for the porduced cars. The componets data for the motors is split up in two sets, which refer to different motor types, as well as the assemblies data for the cars is split up in four seperate sets. Both sets will be joined together, but important info such as car or motor assembly plant or manufacturer is still available sinc it is part of the motor id or the car id if this information is required at a later point.
 Its assumed that the relevant data is stored in the same folder root folder accoriding to the origial path layout.
 
-# T2-component data
+## T2-component data
 
 The raw data for the T2-components has already been processed from the initial raw data, so it is readable as a proper dataframe.
 This included deleting quote signs from the character vectors as well as splitting up the T2 data in two raw data files since the Values were not congruent with their respective column anymore.
 Columns which will not be used are removed and for better readability the column names refering to the T2 component get an according suffix "T2"
 
-```{r T2_data}
+```{r T2_data, message=FALSE}
 Path_T2_1 <- '03_Data/Einzelteil/Einzelteil_T02_p1.txt'
 Path_T2_2 <- '03_Data/Einzelteil/Einzelteil_T02_p2.txt'
 
@@ -58,10 +64,10 @@ T2<- T2_1%>%
   full_join(T2_2)
 ```
 
-# Motor data
+## Motor data
 The respective data is getting read and both id columns are getting renamed for a cleaner joining of the two sets. Also all refernces for other parts are getting removed since they dont contribute any meaningfull information for the 
 Alos the motor data is getting joined together with the T2 component data and each component gets linked with an individual motor Id
-```{r}
+```{r, message=FALSE}
 Path_K1BE1_kom <- '03_Data/Komponente/Bestandteile_Komponente_K1BE1.csv'
 Path_K1BE2_kom <- '03_Data/Komponente/Bestandteile_Komponente_K1BE2.csv' 
 
@@ -79,9 +85,9 @@ Motors <- K1BE1_kom%>%
 T2_mot <- T2%>%
   left_join(Motors, by=c("ID_T02.T2"="ID_T2")) 
 ```
-# Car data
+## Car data
 The car data is being treted in a similar way as the motor data. Only relevant Data is used.
-```{r cars}
+```{r cars, message=FALSE}
 Path_C_11 <- '03_Data/Fahrzeug/Bestandteile_Fahrzeuge_OEM1_Typ11.csv'
 Path_C_12 <- '03_Data/Fahrzeug/Bestandteile_Fahrzeuge_OEM1_Typ12.csv'
 Path_C_21 <- '03_Data/Fahrzeug/Bestandteile_Fahrzeuge_OEM2_Typ21.csv'
@@ -99,12 +105,12 @@ cars<- C_11 %>%
   full_join(C_22) %>%
   select(ID_Motor,ID_Fahrzeug)
 ```
-# Car Ids and filtering for affected cars
+## Car Ids and filtering for affected cars
 For this task it is also necessary to load and read the "Zulassungs" data. First the Data with the motors and respective T2 component data is linked to a final car ID over the cars data set.
 Now with all data finally linked together its possible to decide which car is affected with the faulty T2 component.With the given constraints by date, factory and manufacturer this info is stored in a new column called "affected".
 The Data is also linked to "Zulassungs" data refernce each vehicel to a region.
 
-```{r filter}
+```{r filter,message=FALSE}
 
 Path_Zul <- '03_Data/Zulassungen/Zulassungen_alle_Fahrzeuge.csv'
 
@@ -118,6 +124,9 @@ T2_cars<- cars%>%
   select(-8)
 
 ```
+
+## General plots 
+
 To get an overview of the situation some plots might help.
 The broadest overview is given by filtering for the two OEMs and comparing affected and not affected vehicels.
 The ratio seems to be quite similar for both OEMS.
@@ -137,7 +146,7 @@ fig <- fig%>%
 fig
 ```
 A second plot shows the distribution  in regards to the manufacturing plants, but also here the ratio seems quite similar
-```{r}
+```{r, message=FALSE}
 T2_cars_group_by_plant <- T2_cars %>%
   mutate(Plant=str_sub(ID_Fahrzeug,6,7))%>%
   mutate(affected=as_factor(affected))%>%
@@ -152,7 +161,7 @@ ggplotly(p2)
 ```
 
 This plot shows the 10 regions with the most amount of faulty vehicels
-```{r}
+```{r, message=FALSE}
 T2_cars_by_region <- T2_cars %>%
   filter(affected=="affected")%>%
   group_by(Gemeinden)%>%
@@ -167,9 +176,10 @@ p3<-ggplot(T2_cars_by_region,aes(x=reorder(Gemeinden,-n),y=n))+
 
 ggplotly(p3)
 ```
+## main plot
 Linking the geolocial data to the regions makes it possible to plot a heat map of the affected Vehicels. Its required to connect the cities and regions to a state. For this we load according data. This data wasnt provided. For this study we used this data for postal codes and accoding states. https://excel-karte.de/wp-content/uploads/2016/12/Liste-der-PLZ-in-Excel-Karte-Deutschland-Postleitzahlen.xlsx
 The location data for the longitude and the latitude is calculated by taking the means of all the capitals postal codes data.
-```{r loading and cleaning geo data}
+```{r loading and cleaning geo data, message=FALSE}
 #Connecting the geo data to vehicel data
 
 Path_geo <- '03_Data/Geodaten/Geodaten_Gemeinden_v1.2_2017-08-22_TrR.csv'
@@ -202,7 +212,7 @@ geo <- geo %>%
 ```
 To calculate the distance form each regio to theit respective repair location in the state capital the distance is calculated with the eucidean distance. This done in 
 a small function for convenience
-```{r euclideAN distance}
+```{r euclideAN distance, message=FALSE}
 #euclidean Distance for distance to state capital
 eu_dist <- function(p1,p2,q1,q2){
   d<- sqrt((q1-p1)^2+(q2-p2)^2)
@@ -212,7 +222,7 @@ eu_dist <- function(p1,p2,q1,q2){
 TO get to the final data, only affected cars are preocessed, the geo data and state capital data is getting connected to each vehicel and the distance is calculated.
 After this the whole data is grouped by their staes and then sorted in an ascending order in regards to the distance to the repair location.
 With this sorting its possible to calcualte the repair date with a given beginning date for the repairs. Right now also Non-workdays are scheduled. This could be taken into account by using an additional library like timeDate.
-```{r final Dataset}
+```{r final Dataset, message=FALSE}
 #Geodaten und Bundesländer mit den Fahrzeug verknüpfen über die Zualssung und PLZ. 
 # Amd alot of other stuff
 T2_cars_bund  <- T2_cars %>%
@@ -226,11 +236,13 @@ T2_cars_bund  <- T2_cars %>%
   group_by(Bundesland)%>%
   arrange(Bundesland,distance)%>%
   mutate(rep_days=ceiling(row_number()/100))%>%
-  mutate(rep_date= date(start_repair)+rep_days)
+  mutate(rep_date= date(start_repair)+rep_days)%>%
+  select(c(ID_Fahrzeug,ID_Motor,ID_T02.T2,affected,Gemeinden,rep_days,rep_date))
+kable(T2_cars_bund[1:5, ], caption="Alle infos des gesuchten Fahrzeugs")
 ```
 An approximate heatmap can be plotted. The dot size shows the affected number of vehicles in comparison and the color maps to the duration until the repair date is due.
 
-```{r Heatmap, echo=FALSE}
+```{r Heatmap, echo=FALSE, message=FALSE}
 T2_cars_bund_general <- T2_cars_bund %>%
   group_by(Gemeinden)%>%
   summarise(n=n(), repair_days=max(rep_days))%>%
@@ -253,19 +265,19 @@ fig
 ```
 
 
-## General Tasks
+# General Tasks
 
-# General Task 1: logistics delay
+## General Task 1: logistics delay
 ???
 
-# General Task 2: relational Data
+## General Task 2: relational Data
 The concept of storing data in multiple individual tables rather than in a large table is called a relational database model. The data of the different tables are linked through relationships and keys
 There are a lot of different reasons and advantages why it make sense to store data in separate files instead of saving everything in a huge table. A big advantage is the low data redundancy that is achieved by defined rules and relationships between the tables. The redundancy-free data retention also makes it easier to maintenance data records. Because consistent data storage and relationships between the tables make data changes to only one point in the tables, relational database models also have high data consistency. Furthermore, the relational database model enables a quantity-oriented data processing and a uniform query language. The standardized unified database language used in rational databases is SQL, a user-friendly language. Splitting the data into multiple tables also reduces the complexity and requirements of the data store.
-# General Task 3: registered Vehicels in Dahlem(Eifel)
+## General Task 3: registered Vehicels in Dahlem(Eifel)
 The goal is to find all vehicels who are registered in Dahlem(Eifel) which have a K7 part installed.
 Alreaddy looking into the general registration data, its easy to see, that there are no cars at all registered in Dahlem.
 But for completeness the code is listed anyway.
-```{r D7-Dahlem}
+```{r D7-Dahlem, message=FALSE}
 install.packages("tidyverse")
 library("tidyverse")
 install.packages("stringr")
@@ -310,13 +322,13 @@ Dahlem_k7 <- Kenn %>%
   group_by(Gemeinden) %>%
   summarise(n())%>%
   filter(Gemeinden=='Dahlem1')
-Dahlem_k7
+kable(Dahlem_k7[1:5, ], caption="Zulassungen aller Fahrzeuge mit der Komponente K7 in Dahlem (Eifel)")
 ```
-# General Task 4: Table and variabletypes of "Zulassung"
+## General Task 4: Table and variabletypes of "Zulassung"
 The first row of that data is formatted as doubles. The "IDNummer" und "Gemeinden" are formated as characatervectors and the column "Zulassungen" is foramtted as a date with the general format of "year-month-day".
 
 ```{r echo=FALSE, results='asis',message=FALSE}
-library(knitr)
+
 Path_zul <- '03_Data/Zulassungen/Zulassungen_alle_Fahrzeuge.csv'
 zul <- read_csv2(Path_zul)
 
@@ -324,14 +336,14 @@ kable(zul[1:5, ], caption="Zulassungen aller Fahrzeuge")
 ```
 
 
-# General Task 5: Storage location of data
+## General Task 5: Storage location of data
 There are many reasons why it makes more sense to store data in a data sets in a database on a server than on your own computer.
 One of the main reasons is the accessibility. If you stored the data sets in a database on a server, multiple people can access it from different locations. This is not possible if you stored data sets on your personal computer, where only you have access. Farther, if the data is stored on an external server, you can still access it in case of a technical defect of your own computer. Another important reason is the possible expansion of the memory and the maintenance and the implementation of updates, which are performed by the operator of the server. Furthermore, servers offer a high level of reliability because of the data protection and the recovery software. A final not to negligible reason is the protection of data against external influences such as power outages or fires.
 
-# General Task 6: hit and run
+## General Task 6: hit and run
 Das Fahrzeug kann relativ leicht über die gegebene Teilenummer identifiziert werden.
 Es ist in Aschersleben gemeldet.
-```{r hit and run}
+```{r hit and run, ,message=FALSE}
 #gesuchte Teile Nummer der Karosserie
 part_nr <- 'K5-112-1122-79'
 
@@ -367,9 +379,5 @@ zul <- read_csv2(Path_zul)
 Kenn <- zul %>%
   filter(IDNummer== car_id$ID_Fahrzeug)
 # Das Fahrzeug ist in Aschersleben registriert
-Kenn
+kable(Kenn, caption="Alle infos des gesuchten Fahrzeugs")
 ```
-
-
-
-
