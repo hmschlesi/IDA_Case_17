@@ -1,0 +1,45 @@
+/* Get a fancy font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Yusei+Magic&display=swap');
+
+body {
+  background-color:  	#9da8c1 ;
+  color: 	black; /* text color */
+}
+
+/* Change header text to imported font */
+h2 {
+  font-family: 'Yusei Magic', sans-serif;
+}
+
+/* Make text visible on inputs */
+.shiny-input-container {
+  color: #474747;
+}
+
+.navbar-default {
+    background-color: 	#516d9f ;
+}
+
+.navbar-default:hover {
+    background-color: 	#516d9f ;
+    color: black;
+}
+
+
+.navbar-default .navbar-nav > li > a {
+  color:black;
+  background-color: ;	#9da8c1;
+}
+
+.navbar-default .navbar-nav > li > a:hover {
+  color:black;
+}
+
+.navbar-default .navbar-nav > .active > a{
+  color: black;
+  background-color: #406596;}}
+
+
+.navbar-default .navbar-nav > .active > a:hover {
+  color: black;
+  background-color: #013f81;}
