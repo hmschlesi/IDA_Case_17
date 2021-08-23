@@ -1,7 +1,7 @@
 ---
-title: "IDA_Case17"
-author: "g17"
-date: "13 8 2021"
+title: "IDA Case Study 17 SS 2021"
+author: "Hans-Martin Schlesier 413650, ..."
+date: "23.8.2021"
 output: 
   html_document:
     toc: true
@@ -322,7 +322,7 @@ Dahlem_k7 <- Kenn %>%
   group_by(Gemeinden) %>%
   summarise(n())%>%
   filter(Gemeinden=='Dahlem1')
-kable(Dahlem_k7[1:5, ], caption="Zulassungen aller Fahrzeuge mit der Komponente K7 in Dahlem (Eifel)")
+kable(Dahlem_k7, caption="Zulassungen aller Fahrzeuge mit der Komponente K7 in Dahlem (Eifel)")
 ```
 ## General Task 4: Table and variabletypes of "Zulassung"
 The first row of that data is formatted as doubles. The "IDNummer" und "Gemeinden" are formated as characatervectors and the column "Zulassungen" is foramtted as a date with the general format of "year-month-day".
